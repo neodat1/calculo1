@@ -1,0 +1,170 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <title>Solución de Desigualdades Lineales y Cuadráticas</title>
+    <style>
+        body { font-family: Arial, sans-serif; margin: 30px; background: #f8f8fa; }
+        .container { background: #fff; padding: 20px 30px; border-radius: 12px; box-shadow: 0 2px 12px #bbb3; max-width: 500px; margin: auto; }
+        h2 { color: #283747; }
+        label { font-weight: bold; }
+        select, input { margin: 5px 0 12px 0; padding: 4px; border-radius: 5px; border: 1px solid #bdbdbd; width: 100%; }
+        button { background: #283747; color: #fff; padding: 8px 16px; border: none; border-radius: 8px; font-size: 1rem; }
+        #result { margin-top: 20px; background: #f7f9f9; padding: 12px; border-radius: 8px; }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h2>Solucionador de Desigualdades</h2>
+        <form id="form">
+            <label>Tipo de desigualdad:</label>
+            <select id="tipo" onchange="mostrarCampos()">
+                <option value="lineal">Lineal (ax + b &lt; 0)</option>
+                <option value="cuadratica">Cuadrática (ax² + bx + c &lt; 0)</option>
+            </select>
+            <div id="coeficientes">
+                <!-- Campos dinámicos -->
+            </div>
+            <label>Desigualdad:</label>
+            <select id="signo">
+                <option value="<">&lt;</option>
+                <option value="<=">&le;</option>
+                <option value=">">&gt;</option>
+                <option value=">=">&ge;</option>
+            </select>
+            <button type="button" onclick="resolver()">Resolver</button>
+        </form>
+        <div id="result"></div>
+    </div>
+
+    <script>
+        function mostrarCampos() {
+            let tipo = document.getElementById('tipo').value;
+            let html = '';
+            if (tipo === 'lineal') {
+                html += '<label for="a">Coeficiente a:</label><input type="number" id="a" step="any" required>';
+                html += '<label for="b">Coeficiente b:</label><input type="number" id="b" step="any" required>';
+            } else {
+                html += '<label for="a">Coeficiente a:</label><input type="number" id="a" step="any" required>';
+                html += '<label for="b">Coeficiente b:</label><input type="number" id="b" step="any" required>';
+                html += '<label for="c">Coeficiente c:</label><input type="number" id="c" step="any" required>';
+            }
+            document.getElementById('coeficientes').innerHTML = html;
+        }
+        mostrarCampos();
+
+        function resolver() {
+            let tipo = document.getElementById('tipo').value;
+            let signo = document.getElementById('signo').value;
+            let a = parseFloat(document.getElementById('a').value);
+            let b = parseFloat(document.getElementById('b').value);
+            let resultDiv = document.getElementById('result');
+            resultDiv.innerHTML = "";
+            if (tipo === "lineal") {
+                // ax + b op 0
+                let sol = '';
+                if (a === 0) {
+                    if (
+                        (b < 0 && (signo === "<" || signo === "<=")) ||
+                        (b > 0 && (signo === ">" || signo === ">=")) ||
+                        (b === 0 && (signo === "<=" || signo === ">="))
+                    ) {
+                        sol = 'La desigualdad se cumple para todos los valores de x (<b>solución: ℝ</b>).';
+                    } else {
+                        sol = 'La desigualdad no tiene solución.';
+                    }
+                } else {
+                    let x0 = -b / a;
+                    let dir = (a > 0) ? 1 : -1;
+                    let simb = signo;
+                    let simbolo = { "<": "&lt;", "<=": "&le;", ">": "&gt;", ">=": "&ge;" }[signo];
+                    if ((signo === "<" && a > 0) || (signo === ">" && a < 0)) {
+                        sol = `x ${simbolo} ${x0}`;
+                        sol += `<br><i>Intervalo solución: (${(dir>0)?"-∞":"%2B∞"}, ${x0}${(signo==="&lt;")?")":"]"})</i>`;
+                    } else if ((signo === "<=" && a > 0) || (signo === ">=" && a < 0)) {
+                        sol = `x ${simbolo} ${x0}`;
+                        sol += `<br><i>Intervalo solución: (${(dir>0)?"-∞":"%2B∞"}, ${x0}]</i>`;
+                    } else if ((signo === ">" && a > 0) || (signo === "<" && a < 0)) {
+                        sol = `x ${simbolo} ${x0}`;
+                        sol += `<br><i>Intervalo solución: (${x0}, ${(dir>0)?"%2B∞":"-∞"})</i>`;
+                    } else if ((signo === ">=" && a > 0) || (signo === "<=" && a < 0)) {
+                        sol = `x ${simbolo} ${x0}`;
+                        sol += `<br><i>Intervalo solución: [${x0}, ${(dir>0)?"%2B∞":"-∞"})</i>`;
+                    }
+                }
+                resultDiv.innerHTML = "<b>Solución:</b><br>" + sol;
+            } else {
+                // ax^2 + bx + c op 0
+                let c = parseFloat(document.getElementById('c').value);
+                let D = b * b - 4 * a * c;
+                let simb = signo;
+                let simbolo = { "<": "&lt;", "<=": "&le;", ">": "&gt;", ">=": "&ge;" }[signo];
+                let sol = '';
+                if (a === 0) {
+                    // Se convierte en lineal
+                    let x0 = -c / b;
+                    if (b === 0) {
+                        sol = (c == 0 && (signo === "<=" || signo === ">=")) ? "Todo x" : "Sin solución";
+                    } else {
+                        sol = `Se reduce a una desigualdad lineal.<br>`;
+                        sol += `x ${simbolo} ${x0}`;
+                    }
+                } else {
+                    if (D < 0) {
+                        if ((a > 0 && (signo === "<" || signo === "<=")) || (a < 0 && (signo === ">" || signo === ">="))) {
+                            sol = "La desigualdad se cumple para todos los valores de x (<b>solución: ℝ</b>).";
+                        } else {
+                            sol = "No existe solución real.";
+                        }
+                    } else if (D === 0) {
+                        let x0 = -b / (2 * a);
+                        if (a > 0) {
+                            if (signo === "<" || signo === ">") {
+                                sol = "No existe solución real (excepto en x = " + x0 + ").";
+                            } else if (signo === "<=") {
+                                sol = "x = " + x0;
+                            } else {
+                                sol = "Todo x, excepto x = " + x0;
+                            }
+                        } else {
+                            if (signo === ">" || signo === "<") {
+                                sol = "No existe solución real (excepto en x = " + x0 + ").";
+                            } else if (signo === ">=") {
+                                sol = "x = " + x0;
+                            } else {
+                                sol = "Todo x, excepto x = " + x0;
+                            }
+                        }
+                    } else {
+                        let x1 = (-b - Math.sqrt(D)) / (2 * a);
+                        let x2 = (-b + Math.sqrt(D)) / (2 * a);
+                        if (x1 > x2) { let temp = x1; x1 = x2; x2 = temp; }
+                        if (a > 0) {
+                            if (signo === "<") {
+                                sol = `x ∈ (${x1.toFixed(4)}, ${x2.toFixed(4)})`;
+                            } else if (signo === "<=") {
+                                sol = `x ∈ [${x1.toFixed(4)}, ${x2.toFixed(4)}]`;
+                            } else if (signo === ">") {
+                                sol = `x ∈ (-∞, ${x1.toFixed(4)}) ∪ (${x2.toFixed(4)}, ∞)`;
+                            } else if (signo === ">=") {
+                                sol = `x ∈ (-∞, ${x1.toFixed(4)}] ∪ [${x2.toFixed(4)}, ∞)`;
+                            }
+                        } else {
+                            if (signo === ">") {
+                                sol = `x ∈ (${x1.toFixed(4)}, ${x2.toFixed(4)})`;
+                            } else if (signo === ">=") {
+                                sol = `x ∈ [${x1.toFixed(4)}, ${x2.toFixed(4)}]`;
+                            } else if (signo === "<") {
+                                sol = `x ∈ (-∞, ${x1.toFixed(4)}) ∪ (${x2.toFixed(4)}, ∞)`;
+                            } else if (signo === "<=") {
+                                sol = `x ∈ (-∞, ${x1.toFixed(4)}] ∪ [${x2.toFixed(4)}, ∞)`;
+                            }
+                        }
+                    }
+                }
+                resultDiv.innerHTML = "<b>Solución:</b><br>" + sol;
+            }
+        }
+    </script>
+</body>
+</html>
