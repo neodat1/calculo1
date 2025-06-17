@@ -5,12 +5,13 @@
     <title>Solución de Desigualdades Lineales y Cuadráticas</title>
     <style>
         body { font-family: Arial, sans-serif; margin: 30px; background: #f8f8fa; }
-        .container { background: #fff; padding: 20px 30px; border-radius: 12px; box-shadow: 0 2px 12px #bbb3; max-width: 500px; margin: auto; }
+        .container { background: #fff; padding: 20px 30px; border-radius: 12px; box-shadow: 0 2px 12px #bbb3; max-width: 520px; margin: auto; }
         h2 { color: #283747; }
         label { font-weight: bold; }
         select, input { margin: 5px 0 12px 0; padding: 4px; border-radius: 5px; border: 1px solid #bdbdbd; width: 100%; }
         button { background: #283747; color: #fff; padding: 8px 16px; border: none; border-radius: 8px; font-size: 1rem; }
         #result { margin-top: 20px; background: #f7f9f9; padding: 12px; border-radius: 8px; }
+        #grafico { margin-top: 20px; }
     </style>
 </head>
 <body>
@@ -22,9 +23,7 @@
                 <option value="lineal">Lineal (ax + b &lt; 0)</option>
                 <option value="cuadratica">Cuadrática (ax² + bx + c &lt; 0)</option>
             </select>
-            <div id="coeficientes">
-                <!-- Campos dinámicos -->
-            </div>
+            <div id="coeficientes"></div>
             <label>Desigualdad:</label>
             <select id="signo">
                 <option value="<">&lt;</option>
@@ -35,9 +34,15 @@
             <button type="button" onclick="resolver()">Resolver</button>
         </form>
         <div id="result"></div>
+        <div id="grafico">
+            <canvas id="miGrafico" width="420" height="260"></canvas>
+        </div>
     </div>
 
+    <!-- Chart.js desde CDN -->
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
     <script>
+        let grafico = null;
         function mostrarCampos() {
             let tipo = document.getElementById('tipo').value;
             let html = '';
@@ -60,9 +65,18 @@
             let b = parseFloat(document.getElementById('b').value);
             let resultDiv = document.getElementById('result');
             resultDiv.innerHTML = "";
+            let minX = -10, maxX = 10; // Rango gráfico
+            let c = 0;
+            let formula = "";
+            let yvals = [];
+            let xvals = [];
+            let sol = "";
             if (tipo === "lineal") {
                 // ax + b op 0
-                let sol = '';
+                formula = `${a}x ${b >= 0 ? "+" : "-"} ${Math.abs(b)}`;
+                let x0 = -b / a;
+                let dir = (a > 0) ? 1 : -1;
+                let simbolo = { "<": "&lt;", "<=": "&le;", ">": "&gt;", ">=": "&ge;" }[signo];
                 if (a === 0) {
                     if (
                         (b < 0 && (signo === "<" || signo === "<=")) ||
@@ -74,32 +88,31 @@
                         sol = 'La desigualdad no tiene solución.';
                     }
                 } else {
-                    let x0 = -b / a;
-                    let dir = (a > 0) ? 1 : -1;
-                    let simb = signo;
-                    let simbolo = { "<": "&lt;", "<=": "&le;", ">": "&gt;", ">=": "&ge;" }[signo];
                     if ((signo === "<" && a > 0) || (signo === ">" && a < 0)) {
                         sol = `x ${simbolo} ${x0}`;
-                        sol += `<br><i>Intervalo solución: (${(dir>0)?"-∞":"%2B∞"}, ${x0}${(signo==="&lt;")?")":"]"})</i>`;
+                        sol += `<br><i>Intervalo solución: (${(dir>0)?"-∞":"∞"}, ${x0}${(signo==="&lt;")?")":"]"})</i>`;
                     } else if ((signo === "<=" && a > 0) || (signo === ">=" && a < 0)) {
                         sol = `x ${simbolo} ${x0}`;
-                        sol += `<br><i>Intervalo solución: (${(dir>0)?"-∞":"%2B∞"}, ${x0}]</i>`;
+                        sol += `<br><i>Intervalo solución: (${(dir>0)?"-∞":"∞"}, ${x0}]</i>`;
                     } else if ((signo === ">" && a > 0) || (signo === "<" && a < 0)) {
                         sol = `x ${simbolo} ${x0}`;
-                        sol += `<br><i>Intervalo solución: (${x0}, ${(dir>0)?"%2B∞":"-∞"})</i>`;
+                        sol += `<br><i>Intervalo solución: (${x0}, ${(dir>0)?"∞":"-∞"})</i>`;
                     } else if ((signo === ">=" && a > 0) || (signo === "<=" && a < 0)) {
                         sol = `x ${simbolo} ${x0}`;
-                        sol += `<br><i>Intervalo solución: [${x0}, ${(dir>0)?"%2B∞":"-∞"})</i>`;
+                        sol += `<br><i>Intervalo solución: [${x0}, ${(dir>0)?"∞":"-∞"})</i>`;
                     }
                 }
-                resultDiv.innerHTML = "<b>Solución:</b><br>" + sol;
+                // Datos para graficar
+                for (let x = minX; x <= maxX; x += 0.1) {
+                    xvals.push(Number(x.toFixed(2)));
+                    yvals.push(a * x + b);
+                }
             } else {
-                // ax^2 + bx + c op 0
-                let c = parseFloat(document.getElementById('c').value);
+                // ax² + bx + c op 0
+                c = parseFloat(document.getElementById('c').value);
+                formula = `${a}x² ${b >= 0 ? "+" : "-"} ${Math.abs(b)}x ${c >= 0 ? "+" : "-"} ${Math.abs(c)}`;
                 let D = b * b - 4 * a * c;
-                let simb = signo;
                 let simbolo = { "<": "&lt;", "<=": "&le;", ">": "&gt;", ">=": "&ge;" }[signo];
-                let sol = '';
                 if (a === 0) {
                     // Se convierte en lineal
                     let x0 = -c / b;
@@ -162,8 +175,60 @@
                         }
                     }
                 }
-                resultDiv.innerHTML = "<b>Solución:</b><br>" + sol;
+                // Datos para graficar
+                for (let x = minX; x <= maxX; x += 0.1) {
+                    xvals.push(Number(x.toFixed(2)));
+                    yvals.push(a * x * x + b * x + c);
+                }
             }
+            resultDiv.innerHTML = "<b>Solución:</b><br>" + sol;
+
+            // Gráfico
+            let ctx = document.getElementById('miGrafico').getContext('2d');
+            if (grafico) {
+                grafico.destroy();
+            }
+            grafico = new Chart(ctx, {
+                type: 'line',
+                data: {
+                    labels: xvals,
+                    datasets: [
+                        {
+                            label: `f(x) = ${formula}`,
+                            data: yvals,
+                            borderColor: '#2E86C1',
+                            borderWidth: 2,
+                            pointRadius: 0,
+                            fill: false,
+                        },
+                        {
+                            label: 'f(x) = 0',
+                            data: Array(xvals.length).fill(0),
+                            borderColor: '#C0392B',
+                            borderWidth: 1,
+                            borderDash: [6,4],
+                            pointRadius: 0,
+                            fill: false,
+                        }
+                    ]
+                },
+                options: {
+                    responsive: false,
+                    plugins: { legend: { display: true } },
+                    scales: {
+                        x: {
+                            title: { display: true, text: 'x' },
+                            min: minX,
+                            max: maxX,
+                        },
+                        y: {
+                            title: { display: true, text: 'f(x)' },
+                            min: Math.min(...yvals, -10),
+                            max: Math.max(...yvals, 10)
+                        }
+                    }
+                }
+            });
         }
     </script>
 </body>
